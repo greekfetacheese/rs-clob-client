@@ -346,13 +346,13 @@ impl StdError for BoundedIntError {}
 ///
 /// ```
 /// use polymarket_client_sdk::data::types::TradeFilter;
-/// use rust_decimal_macros::dec;
+/// use fixed_num::Dec19x19 as Decimal;
 ///
 /// // Filter trades with at least $100 USDC value
-/// let filter = TradeFilter::cash(dec!(100)).unwrap();
+/// let filter = TradeFilter::cash(Decimal!(100)).unwrap();
 ///
 /// // Filter trades with at least 50 tokens
-/// let filter = TradeFilter::tokens(dec!(50)).unwrap();
+/// let filter = TradeFilter::tokens(Decimal!(50)).unwrap();
 /// ```
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

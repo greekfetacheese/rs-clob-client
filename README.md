@@ -96,7 +96,7 @@ This SDK re-exports commonly used types from external crates so you don't need t
 use polymarket_client_sdk::types::{
     Address, ChainId, Signature, address,  // from alloy::primitives
     DateTime, NaiveDate, Utc,              // from chrono
-    Decimal, dec,                          // from rust_decimal + rust_decimal_macros
+    Decimal,                          // from fixed_num
 };
 ```
 

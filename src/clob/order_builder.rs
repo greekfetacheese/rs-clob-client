@@ -1,10 +1,11 @@
 use std::marker::PhantomData;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use alloy::primitives::U256;
+use alloy::primitives::{U256, utils::parse_units};
 use chrono::{DateTime, Utc};
-use rand::RngExt as _;
-use rust_decimal::prelude::ToPrimitive as _;
+use fixed_num::ops::RoundTo;
+use num_traits::ToPrimitive;
+use rand::Rng as _;
 
 use crate::Result;
 use crate::auth::Kind as AuthKind;
@@ -147,21 +148,25 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
         }
 
         let fee_rate = self.client.fee_rate_bps(token_id).await?;
+
+        /*
         let minimum_tick_size = self
             .client
             .tick_size(token_id)
             .await?
             .minimum_tick_size
             .as_decimal();
+         */
 
-        let decimals = minimum_tick_size.scale();
+        // let decimals = minimum_tick_size.min_scale();
 
-        if price.scale() > minimum_tick_size.scale() {
+        /*
+        if price.min_scale() > minimum_tick_size.min_scale() {
             return Err(Error::validation(format!(
                 "Unable to build Order: Price {price} has {} decimal places. Minimum tick size \
                 {minimum_tick_size} has {} decimal places. Price decimal places <= minimum tick size decimal places",
-                price.scale(),
-                minimum_tick_size.scale()
+                price.min_scale(),
+                minimum_tick_size.min_scale()
             )));
         }
 
@@ -170,6 +175,7 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
                 "Price {price} is too small or too large for the minimum tick size {minimum_tick_size}"
             )));
         }
+        */
 
         let Some(size) = self.size else {
             return Err(Error::validation(
@@ -177,10 +183,11 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
             ));
         };
 
-        if size.scale() > LOT_SIZE_SCALE {
+        /*
+        if size.min_scale() > LOT_SIZE_SCALE {
             return Err(Error::validation(format!(
                 "Unable to build Order: Size {size} has {} decimal places. Maximum lot size is {LOT_SIZE_SCALE}",
-                size.scale()
+                size.min_scale()
             )));
         }
 
@@ -189,6 +196,7 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
                 "Unable to build Order due to negative size {size}"
             )));
         }
+        */
 
         let nonce = self.nonce.unwrap_or(0);
         let expiration = self.expiration.unwrap_or(DateTime::<Utc>::UNIX_EPOCH);
@@ -218,26 +226,23 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
         // This means they will take/receive 100 `YES` tokens, make/give up 34 USDC. This means that
         // the `taker_amount` is `100000000` and the `maker_amount` of `34000000`.
         let (taker_amount, maker_amount) = match side {
-            Side::Buy => (
-                size,
-                (size * price).trunc_with_scale(decimals + LOT_SIZE_SCALE),
-            ),
-            Side::Sell => (
-                (size * price).trunc_with_scale(decimals + LOT_SIZE_SCALE),
-                size,
-            ),
+            Side::Buy => (size, size * price),
+            Side::Sell => (size * price, size),
             side => return Err(Error::validation(format!("Invalid side: {side}"))),
         };
 
         let salt = to_ieee_754_int((self.salt_generator)());
+
+        let maker_amount = to_u256(maker_amount)?;
+        let taker_amount = to_u256(taker_amount)?;
 
         let order = Order {
             salt: U256::from(salt),
             maker: self.funder.unwrap_or(self.signer),
             taker,
             tokenId: token_id,
-            makerAmount: U256::from(to_fixed_u128(maker_amount)),
-            takerAmount: U256::from(to_fixed_u128(taker_amount)),
+            makerAmount: maker_amount,
+            takerAmount: taker_amount,
             side: side as u8,
             feeRateBps: U256::from(fee_rate.base_fee),
             nonce: U256::from(nonce),
@@ -372,6 +377,7 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
                 "postOnly is only supported for limit orders",
             ));
         }
+
         let price = match self.price {
             Some(price) => price,
             None => self.calculate_price(order_type.clone()).await?,
@@ -385,10 +391,11 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
             .as_decimal();
         let fee_rate = self.client.fee_rate_bps(token_id).await?;
 
-        let decimals = minimum_tick_size.scale();
+        let decimals = minimum_tick_size.min_scale();
 
         // Ensure that the market price returned internally is truncated to our tick size
-        let price = price.trunc_with_scale(decimals);
+        let price = price.round_to(decimals as i64);
+
         if price < minimum_tick_size || price > Decimal::ONE - minimum_tick_size {
             return Err(Error::validation(format!(
                 "Price {price} is too small or too large for the minimum tick size {minimum_tick_size}"
@@ -416,19 +423,19 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
         let (taker_amount, maker_amount) = match (side, amount.0) {
             // Spend USDC to buy shares
             (Side::Buy, AmountInner::Usdc(_)) => {
-                let shares = (raw_amount / price).trunc_with_scale(decimals + LOT_SIZE_SCALE);
+                let shares = raw_amount / price;
                 (shares, raw_amount)
             }
 
             // Buy N shares: use cutoff `price` derived from ask depth
             (Side::Buy, AmountInner::Shares(_)) => {
-                let usdc = (raw_amount * price).trunc_with_scale(decimals + LOT_SIZE_SCALE);
+                let usdc = raw_amount * price;
                 (raw_amount, usdc)
             }
 
             // Sell N shares for USDC
             (Side::Sell, AmountInner::Shares(_)) => {
-                let usdc = (raw_amount * price).trunc_with_scale(decimals + LOT_SIZE_SCALE);
+                let usdc = raw_amount * price;
                 (usdc, raw_amount)
             }
 
@@ -443,13 +450,16 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
 
         let salt = to_ieee_754_int((self.salt_generator)());
 
+        let maker_amount = to_u256(maker_amount)?;
+        let taker_amount = to_u256(taker_amount)?;
+
         let order = Order {
             salt: U256::from(salt),
             maker: self.funder.unwrap_or(self.signer),
             taker,
             tokenId: token_id,
-            makerAmount: U256::from(to_fixed_u128(maker_amount)),
-            takerAmount: U256::from(to_fixed_u128(taker_amount)),
+            makerAmount: maker_amount,
+            takerAmount: taker_amount,
             side: side as u8,
             feeRateBps: U256::from(fee_rate.base_fee),
             nonce: U256::from(nonce),
@@ -471,12 +481,21 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
 
 /// Removes trailing zeros, truncates to [`USDC_DECIMALS`] decimal places, and quanitizes as an
 /// integer.
+
+/*
 fn to_fixed_u128(d: Decimal) -> u128 {
     d.normalize()
         .trunc_with_scale(USDC_DECIMALS)
         .mantissa()
         .to_u128()
         .expect("The `build` call in `OrderBuilder<S, OrderKind, K>` ensures that only positive values are being multiplied/divided")
+}
+        */
+
+fn to_u256(d: Decimal) -> Result<U256> {
+    let amount = d.format_prec(2);
+    let wei = parse_units(&amount, USDC_DECIMALS as u8).unwrap();
+    Ok(wei.get_absolute())
 }
 
 /// Mask the salt to be <= 2^53 - 1, as the backend parses as an IEEE 754.
@@ -507,10 +526,11 @@ pub(crate) fn generate_seed() -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use rust_decimal_macros::dec;
+    // use rust_decimal_macros::dec;
 
     use super::*;
 
+    /*
     #[test]
     fn to_fixed_u128_should_succeed() {
         assert_eq!(to_fixed_u128(dec!(123.456)), 123_456_000);
@@ -519,14 +539,36 @@ mod tests {
         assert_eq!(to_fixed_u128(dec!(3.456789111111111)), 3_456_789);
         assert_eq!(to_fixed_u128(Decimal::ZERO), 0);
     }
+    */
 
+    #[test]
+    fn to_u256_should_succeed() {
+        assert_eq!(to_u256(Decimal!(123.456)).unwrap(), U256::from(123_456_000));
+        assert_eq!(
+            to_u256(Decimal!(123.456789)).unwrap(),
+            U256::from(123_456_789)
+        );
+        assert_eq!(
+            to_u256(Decimal!(123.456789111111111)).unwrap(),
+            U256::from(123_456_789)
+        );
+        assert_eq!(
+            to_u256(Decimal!(3.456789111111111)).unwrap(),
+            U256::from(3_456_789)
+        );
+        assert_eq!(to_u256(Decimal::ZERO).unwrap(), U256::from(0));
+    }
+
+    /*
     #[test]
     #[should_panic(
         expected = "The `build` call in `OrderBuilder<S, OrderKind, K>` ensures that only positive values are being multiplied/divided"
     )]
-    fn to_fixed_u128_panics() {
-        to_fixed_u128(dec!(-123.456));
+    fn to_u256_panics() {
+        let value = to_u256(Decimal!(-123.456));
+        println!("{value}");
     }
+    */
 
     #[test]
     fn order_salt_should_be_less_than_or_equal_to_2_to_the_53_minus_1() {

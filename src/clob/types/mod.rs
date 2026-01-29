@@ -3,12 +3,12 @@ use std::fmt;
 use alloy::core::sol;
 use alloy::primitives::{Signature, U256};
 use bon::Builder;
-use rust_decimal_macros::dec;
 use serde::ser::{Error as _, SerializeStruct as _};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use serde_repr::Serialize_repr;
 use serde_with::{DisplayFromStr, serde_as};
 use strum_macros::Display;
+//use fixed_num::Dec19x19 as Decimal;
 
 use crate::Result;
 use crate::auth::ApiKey;
@@ -179,27 +179,29 @@ pub struct Amount(pub(crate) AmountInner);
 
 impl Amount {
     pub fn usdc(value: Decimal) -> Result<Amount> {
-        let normalized = value.normalize();
-        if normalized.scale() > USDC_DECIMALS {
+        // let normalized = value.normalize();
+        let scale = value.min_scale();
+        if scale > USDC_DECIMALS {
             return Err(Error::validation(format!(
                 "Unable to build Amount with {} decimal points, must be <= {USDC_DECIMALS}",
-                normalized.scale()
+                scale
             )));
         }
 
-        Ok(Amount(AmountInner::Usdc(normalized)))
+        Ok(Amount(AmountInner::Usdc(value)))
     }
 
     pub fn shares(value: Decimal) -> Result<Amount> {
-        let normalized = value.normalize();
-        if normalized.scale() > LOT_SIZE_SCALE {
+        // let normalized = value.normalize();
+        let scale = value.min_scale();
+        if scale > LOT_SIZE_SCALE {
             return Err(Error::validation(format!(
                 "Unable to build Amount with {} decimal points, must be <= {LOT_SIZE_SCALE}",
-                normalized.scale()
+                scale
             )));
         }
 
-        Ok(Amount(AmountInner::Shares(normalized)))
+        Ok(Amount(AmountInner::Shares(value)))
     }
 
     #[must_use]
@@ -376,10 +378,10 @@ impl TickSize {
     #[must_use]
     pub fn as_decimal(&self) -> Decimal {
         match self {
-            TickSize::Tenth => dec!(0.1),
-            TickSize::Hundredth => dec!(0.01),
-            TickSize::Thousandth => dec!(0.001),
-            TickSize::TenThousandth => dec!(0.0001),
+            TickSize::Tenth => Decimal!(0.1),
+            TickSize::Hundredth => Decimal!(0.01),
+            TickSize::Thousandth => Decimal!(0.001),
+            TickSize::TenThousandth => Decimal!(0.0001),
         }
     }
 }
@@ -395,10 +397,10 @@ impl TryFrom<Decimal> for TickSize {
 
     fn try_from(value: Decimal) -> std::result::Result<Self, Self::Error> {
         match value {
-            v if v == dec!(0.1) => Ok(TickSize::Tenth),
-            v if v == dec!(0.01) => Ok(TickSize::Hundredth),
-            v if v == dec!(0.001) => Ok(TickSize::Thousandth),
-            v if v == dec!(0.0001) => Ok(TickSize::TenThousandth),
+            v if v == Decimal!(0.1) => Ok(TickSize::Tenth),
+            v if v == Decimal!(0.01) => Ok(TickSize::Hundredth),
+            v if v == Decimal!(0.001) => Ok(TickSize::Thousandth),
+            v if v == Decimal!(0.0001) => Ok(TickSize::TenThousandth),
             other => Err(Error::validation(format!(
                 "Unknown tick size: {other}. Expected one of: 0.1, 0.01, 0.001, 0.0001"
             ))),
@@ -563,10 +565,10 @@ mod tests {
 
     #[test]
     fn tick_size_decimals_should_succeed() {
-        assert_eq!(TickSize::Tenth.as_decimal().scale(), 1);
-        assert_eq!(TickSize::Hundredth.as_decimal().scale(), 2);
-        assert_eq!(TickSize::Thousandth.as_decimal().scale(), 3);
-        assert_eq!(TickSize::TenThousandth.as_decimal().scale(), 4);
+        assert_eq!(TickSize::Tenth.as_decimal().min_scale(), 1);
+        assert_eq!(TickSize::Hundredth.as_decimal().min_scale(), 2);
+        assert_eq!(TickSize::Thousandth.as_decimal().min_scale(), 3);
+        assert_eq!(TickSize::TenThousandth.as_decimal().min_scale(), 4);
     }
 
     #[test]
@@ -583,15 +585,18 @@ mod tests {
     #[test]
     fn tick_from_decimal_should_succeed() {
         assert_eq!(
-            TickSize::try_from(dec!(0.0001)).unwrap(),
+            TickSize::try_from(Decimal!(0.0001)).unwrap(),
             TickSize::TenThousandth
         );
         assert_eq!(
-            TickSize::try_from(dec!(0.001)).unwrap(),
+            TickSize::try_from(Decimal!(0.001)).unwrap(),
             TickSize::Thousandth
         );
-        assert_eq!(TickSize::try_from(dec!(0.01)).unwrap(), TickSize::Hundredth);
-        assert_eq!(TickSize::try_from(dec!(0.1)).unwrap(), TickSize::Tenth);
+        assert_eq!(
+            TickSize::try_from(Decimal!(0.01)).unwrap(),
+            TickSize::Hundredth
+        );
+        assert_eq!(TickSize::try_from(Decimal!(0.1)).unwrap(), TickSize::Tenth);
     }
 
     #[test]
@@ -608,20 +613,20 @@ mod tests {
 
     #[test]
     fn amount_should_succeed() -> Result<()> {
-        let usdc = Amount::usdc(Decimal::ONE_HUNDRED)?;
+        let usdc = Amount::usdc(Decimal!(100))?;
         assert!(usdc.is_usdc());
-        assert_eq!(usdc.as_inner(), Decimal::ONE_HUNDRED);
+        assert_eq!(usdc.as_inner(), Decimal!(100));
 
-        let shares = Amount::shares(Decimal::ONE_HUNDRED)?;
+        let shares = Amount::shares(Decimal!(100))?;
         assert!(shares.is_shares());
-        assert_eq!(shares.as_inner(), Decimal::ONE_HUNDRED);
+        assert_eq!(shares.as_inner(), Decimal!(100));
 
         Ok(())
     }
 
     #[test]
     fn improper_shares_lot_size_should_fail() {
-        let Err(err) = Amount::shares(dec!(0.23400)) else {
+        let Err(err) = Amount::shares(Decimal!(0.23400)) else {
             panic!()
         };
 
@@ -634,7 +639,7 @@ mod tests {
 
     #[test]
     fn improper_usdc_decimal_size_should_fail() {
-        let Err(err) = Amount::usdc(dec!(0.2340011)) else {
+        let Err(err) = Amount::usdc(Decimal!(0.2340011)) else {
             panic!()
         };
 

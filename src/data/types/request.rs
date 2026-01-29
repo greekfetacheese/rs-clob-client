@@ -129,12 +129,12 @@ fn filter_is_none_or_empty(f: &Option<MarketFilter>) -> bool {
 /// ```
 /// use polymarket_client_sdk::types::address;
 /// use polymarket_client_sdk::data::{types::request::TradesRequest, types::{Side, TradeFilter}};
-/// use rust_decimal_macros::dec;
+/// use fixed_num::Dec19x19 as Decimal;
 ///
 /// let request = TradesRequest::builder()
 ///     .user(address!("56687bf447db6ffa42ffe2204a05edaa20f55839"))
 ///     .side(Side::Buy)
-///     .trade_filter(TradeFilter::cash(dec!(100)).unwrap())
+///     .trade_filter(TradeFilter::cash(Decimal!(100)).unwrap())
 ///     .build();
 /// ```
 #[skip_serializing_none]

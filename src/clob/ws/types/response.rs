@@ -541,7 +541,7 @@ pub fn parse_if_interested(
 mod tests {
     use std::str::FromStr as _;
 
-    use rust_decimal_macros::dec;
+    use fixed_num::Dec19x19 as Decimal;
 
     use super::*;
     use crate::types::b256;
@@ -608,7 +608,7 @@ mod tests {
 
                 assert_eq!(changes.asset_id, U256::from_str("106585164761922456203746651621390029417453862034640469075081961934906147433548").unwrap());
                 assert_eq!(changes.side, Side::Buy);
-                assert_eq!(changes.size.unwrap(), Decimal::TEN);
+                assert_eq!(changes.size.unwrap(), Decimal!(10));
             }
             _ => panic!("Expected PriceChange message"),
         }
@@ -651,14 +651,14 @@ mod tests {
                 assert_eq!(changes.len(), 2);
 
                 assert_eq!(changes[0].asset_id, U256::from_str("106585164761922456203746651621390029417453862034640469075081961934906147433548").unwrap());
-                assert_eq!(changes[0].best_bid, Some(dec!(0.11)));
-                assert_eq!(changes[0].price, dec!(0.10));
+                assert_eq!(changes[0].best_bid, Some(Decimal!(0.11)));
+                assert_eq!(changes[0].price, Decimal!(0.10));
                 assert!(changes[0].size.is_none());
 
                 assert_eq!(changes[1].asset_id, U256::from_str("106585164761922456203746651621390029417453862034640469075081961934906147433548").unwrap());
                 assert_eq!(changes[1].best_bid, None);
-                assert_eq!(changes[1].size, Some(dec!(5)));
-                assert_eq!(changes[1].price, dec!(0.90));
+                assert_eq!(changes[1].size, Some(Decimal!(5)));
+                assert_eq!(changes[1].price, Decimal!(0.90));
             }
             _ => panic!("Expected first price change"),
         }
@@ -759,9 +759,9 @@ mod tests {
         let msg: WsMessage = serde_json::from_str(json).unwrap();
         match msg {
             WsMessage::BestBidAsk(bba) => {
-                assert_eq!(bba.best_bid, dec!(0.73));
-                assert_eq!(bba.best_ask, dec!(0.77));
-                assert_eq!(bba.spread, dec!(0.04));
+                assert_eq!(bba.best_bid, Decimal!(0.73));
+                assert_eq!(bba.best_ask, Decimal!(0.77));
+                assert_eq!(bba.spread, Decimal!(0.04));
             }
             _ => panic!("Expected BestBidAsk message"),
         }
@@ -867,8 +867,8 @@ mod tests {
         let msg: WsMessage = serde_json::from_str(json).unwrap();
         match msg {
             WsMessage::LastTradePrice(ltp) => {
-                assert_eq!(ltp.price, dec!(0.456));
-                assert_eq!(ltp.size, Some(dec!(219.217767)));
+                assert_eq!(ltp.price, Decimal!(0.456));
+                assert_eq!(ltp.size, Some(Decimal!(219.217767)));
                 assert_eq!(ltp.fee_rate_bps, Some(Decimal::ZERO));
                 assert_eq!(ltp.side, Some(Side::Buy));
             }
@@ -977,7 +977,7 @@ mod tests {
         let msg: WsMessage = serde_json::from_str(json).unwrap();
         match msg {
             WsMessage::LastTradePrice(ltp) => {
-                assert_eq!(ltp.price, dec!(0.5));
+                assert_eq!(ltp.price, Decimal!(0.5));
                 assert!(ltp.size.is_none());
                 assert!(ltp.fee_rate_bps.is_none());
                 assert!(ltp.side.is_none());
@@ -994,9 +994,9 @@ mod tests {
                 "106585164761922456203746651621390029417453862034640469075081961934906147433548",
             )
             .unwrap(),
-            best_bid: dec!(0.5),
-            best_ask: dec!(0.6),
-            spread: dec!(0.1),
+            best_bid: Decimal!(0.5),
+            best_ask: Decimal!(0.6),
+            spread: Decimal!(0.1),
             timestamp: 0,
         });
         assert!(matches_interest(&bba, MessageInterest::BEST_BID_ASK));

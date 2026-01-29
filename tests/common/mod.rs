@@ -11,7 +11,7 @@
 
 use std::str::FromStr as _;
 
-use alloy::primitives::U256;
+use alloy::primitives::{U256, utils::format_units};
 use alloy::signers::Signer as _;
 use alloy::signers::k256::ecdsa::SigningKey;
 use alloy::signers::local::LocalSigner;
@@ -124,7 +124,15 @@ pub fn ensure_requirements(server: &MockServer, token_id: U256, tick_size: TickS
     });
 }
 
+/*
 #[must_use]
 pub fn to_decimal(value: U256) -> Decimal {
-    Decimal::from_str_exact(&value.to_string()).unwrap()
+    Decimal::from_str(&value.to_string()).unwrap()
+}
+     */
+
+#[must_use]
+pub fn u256_to_decimal(value: U256, decimals: u8) -> Decimal {
+    let formatted = format_units(value, decimals).unwrap();
+    Decimal::from_str(&formatted).unwrap()
 }

@@ -4,6 +4,7 @@
 )]
 
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 
 use bon::Builder;
 use chrono::{DateTime, NaiveDate, Utc};
@@ -150,10 +151,17 @@ impl OrderBookSummaryResponse {
 }
 
 #[non_exhaustive]
-#[derive(Clone, Debug, Serialize, Deserialize, Hash, Builder, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, Builder, PartialEq)]
 pub struct OrderSummary {
     pub price: Decimal,
     pub size: Decimal,
+}
+
+impl Hash for OrderSummary {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.price.repr.hash(state);
+        self.size.repr.hash(state);
+    }
 }
 
 #[non_exhaustive]
