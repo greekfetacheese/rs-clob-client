@@ -1,6 +1,6 @@
 {
-    "rust-analyzer.cargo.features": "all",
-    "[rust]": {
-        "editor.formatOnSave": true
-    }
+  "rust-analyzer.cargo.features": ["clob", "data", "gamma", "bridge", "ctf", "rfq", "ws", "rtds", "tracing"],
+  "[rust]": {
+    "editor.formatOnSave": true
+  }
 }

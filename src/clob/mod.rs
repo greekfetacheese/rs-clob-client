@@ -104,7 +104,7 @@
 //! use polymarket_client_sdk::{POLYGON, PRIVATE_KEY_VAR};
 //! use polymarket_client_sdk::clob::{Client, Config};
 //! use polymarket_client_sdk::clob::types::{Side, SignedOrder};
-//! use polymarket_client_sdk::types::{dec, Decimal, U256};
+//! use polymarket_client_sdk::types::{Decimal, U256};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! // Create signer from private key
@@ -120,8 +120,8 @@
 //!     .limit_order()
 //!     .token_id(U256::from_str("15871154585880608648532107628464183779895785213830018178010423617714102767076")?)
 //!     .side(Side::Buy)
-//!     .price(dec!(0.5))
-//!     .size(Decimal::TEN)
+//!     .price(Decimal!(0.5))
+//!     .size(Decimal!(10))
 //!     .build()
 //!     .await?;
 //!
