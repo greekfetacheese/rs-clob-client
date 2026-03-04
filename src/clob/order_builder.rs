@@ -5,7 +5,7 @@ use alloy::primitives::{U256, utils::parse_units};
 use chrono::{DateTime, Utc};
 use fixed_num::ops::RoundTo;
 use num_traits::ToPrimitive;
-use rand::Rng as _;
+use rand::RngExt;
 
 use crate::Result;
 use crate::auth::Kind as AuthKind;
