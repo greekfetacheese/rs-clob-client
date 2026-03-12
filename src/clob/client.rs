@@ -2110,6 +2110,7 @@ impl<K: Kind> Client<Authenticated<K>> {
             amount: None,
             side: None,
             nonce: None,
+            salt: None,
             expiration: None,
             taker: None,
             order_type: None,

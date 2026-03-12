@@ -46,6 +46,7 @@ pub struct OrderBuilder<OrderKind, K: AuthKind> {
     pub(crate) amount: Option<Amount>,
     pub(crate) side: Option<Side>,
     pub(crate) nonce: Option<u64>,
+    pub(crate) salt: Option<u64>,
     pub(crate) expiration: Option<DateTime<Utc>>,
     pub(crate) taker: Option<Address>,
     pub(crate) order_type: Option<OrderType>,
@@ -114,6 +115,12 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
     #[must_use]
     pub fn size(mut self, size: Decimal) -> Self {
         self.size = Some(size);
+        self
+    }
+
+    #[must_use]
+    pub fn salt(mut self, salt: u64) -> Self {
+        self.salt = Some(salt);
         self
     }
 
@@ -231,7 +238,9 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
             side => return Err(Error::validation(format!("Invalid side: {side}"))),
         };
 
-        let salt = to_ieee_754_int((self.salt_generator)());
+        let salt = self
+            .salt
+            .unwrap_or_else(|| (to_ieee_754_int((self.salt_generator)())));
 
         let maker_amount = to_u256(maker_amount)?;
         let taker_amount = to_u256(taker_amount)?;

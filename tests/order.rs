@@ -34,6 +34,25 @@ mod lifecycle {
     use crate::common::{API_KEY, PASSPHRASE, POLY_ADDRESS, PRIVATE_KEY, SECRET};
 
     #[tokio::test]
+    async fn test_order_builder_salt() -> anyhow::Result<()> {
+        let server = MockServer::start();
+        let client = create_authenticated(&server).await?;
+
+        let salt: u64 = 1234;
+        let _signable_order = client
+            .limit_order()
+            .token_id(token_1())
+            .price(Decimal!(0.5))
+            .size(Decimal!(100))
+            .side(Side::Buy)
+            .salt(salt)
+            .build()
+            .await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn order_parameters_should_reset_on_new_order() -> anyhow::Result<()> {
         let server = MockServer::start();
         let client = create_authenticated(&server).await?;
