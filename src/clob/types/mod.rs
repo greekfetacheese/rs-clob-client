@@ -1,7 +1,7 @@
 use std::fmt;
 
 use alloy::core::sol;
-use alloy::primitives::{Signature, U256};
+use alloy::primitives::{FixedBytes, Signature, U256};
 use bon::Builder;
 use serde::ser::{Error as _, SerializeStruct as _};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
@@ -479,6 +479,7 @@ pub struct SignableOrder {
 #[derive(Debug, Builder, PartialEq)]
 pub struct SignedOrder {
     pub order: Order,
+    pub order_hash: FixedBytes<32>,
     pub signature: Signature,
     pub order_type: OrderType,
     pub owner: ApiKey,
@@ -717,6 +718,7 @@ mod tests {
     fn signed_order_serialization_omits_post_only_when_none() {
         let signed_order = SignedOrder {
             order: Order::default(),
+            order_hash: FixedBytes::ZERO,
             signature: Signature::new(U256::ZERO, U256::ZERO, false),
             order_type: OrderType::GTC,
             owner: ApiKey::nil(),

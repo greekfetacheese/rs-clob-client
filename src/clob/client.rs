@@ -1447,12 +1447,12 @@ impl<K: Kind> Client<Authenticated<K>> {
             ..Eip712Domain::default()
         };
 
-        let signature = signer
-            .sign_hash(&order.eip712_signing_hash(&domain))
-            .await?;
+        let order_hash = &order.eip712_signing_hash(&domain);
+        let signature = signer.sign_hash(order_hash).await?;
 
         Ok(SignedOrder {
             order,
+            order_hash: *order_hash,
             signature,
             order_type,
             owner: self.state().credentials.key,

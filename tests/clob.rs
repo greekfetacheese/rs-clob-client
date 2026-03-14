@@ -1378,7 +1378,7 @@ mod authenticated {
     #[cfg(feature = "heartbeats")]
     use std::time::Duration;
 
-    use alloy::primitives::Signature;
+    use alloy::primitives::{FixedBytes, Signature};
     use alloy::signers::Signer as _;
     use alloy::signers::local::LocalSigner;
     use chrono::NaiveDate;
@@ -1537,6 +1537,7 @@ mod authenticated {
 
         let expected = SignedOrder::builder()
             .owner(API_KEY)
+            .order_hash(FixedBytes::ZERO)
             .order(signable_order.order)
             .order_type(OrderType::GTC)
             .post_only(false)
