@@ -11,6 +11,9 @@ use crate::clob::ws::interest::MessageInterest;
 use crate::error::Kind;
 use crate::types::{B256, Decimal, U256};
 
+use bincode_next::{Decode, Encode};
+use std::str::FromStr;
+
 /// Top-level WebSocket message wrapper.
 ///
 /// All messages received from the WebSocket connection are deserialized into this enum.
@@ -86,14 +89,79 @@ pub struct BookUpdate {
     pub hash: Option<String>,
 }
 
+impl Encode for BookUpdate {
+    fn encode<E: bincode_next::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode_next::error::EncodeError> {
+        let asset_id_str = self.asset_id.to_string();
+        asset_id_str.encode(encoder)?;
+
+        let market_str = self.market.to_string();
+        market_str.encode(encoder)?;
+
+        self.timestamp.encode(encoder)?;
+        self.bids.encode(encoder)?;
+        self.asks.encode(encoder)?;
+        self.hash.encode(encoder)?;
+        Ok(())
+    }
+}
+
+impl<C> Decode<C> for BookUpdate {
+    fn decode<D: bincode_next::de::Decoder<Context = C>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode_next::error::DecodeError> {
+        let asset_id_str = String::decode(decoder)?;
+        let asset_id = U256::from_str(&asset_id_str).unwrap();
+
+        let market_str = String::decode(decoder)?;
+        let market = B256::from_str(&market_str).unwrap();
+
+        let timestamp = i64::decode(decoder)?;
+        let bids = Vec::<OrderBookLevel>::decode(decoder)?;
+        let asks = Vec::<OrderBookLevel>::decode(decoder)?;
+        let hash = Option::<String>::decode(decoder)?;
+        Ok(BookUpdate {
+            asset_id,
+            market,
+            timestamp,
+            bids,
+            asks,
+            hash,
+        })
+    }
+}
+
 /// Individual price level in an orderbook.
 #[non_exhaustive]
-#[derive(Debug, Clone, Deserialize, Builder)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Builder)]
 pub struct OrderBookLevel {
     /// Price at this level
     pub price: Decimal,
     /// Total size available at this price
     pub size: Decimal,
+}
+
+impl Encode for OrderBookLevel {
+    fn encode<E: bincode_next::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode_next::error::EncodeError> {
+        self.price.encode(encoder)?;
+        self.size.encode(encoder)?;
+        Ok(())
+    }
+}
+
+impl<C> Decode<C> for OrderBookLevel {
+    fn decode<D: bincode_next::de::Decoder<Context = C>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode_next::error::DecodeError> {
+        let price = Decimal::decode(decoder)?;
+        let size = Decimal::decode(decoder)?;
+        Ok(OrderBookLevel { price, size })
+    }
 }
 
 /// Unified wire format for `price_change` events.
@@ -545,6 +613,7 @@ mod tests {
 
     use super::*;
     use crate::types::b256;
+    use bincode_next::{config, decode_from_slice, encode_to_vec};
 
     // Test market condition ID
     const TEST_MARKET: B256 =
@@ -562,6 +631,56 @@ mod tests {
             WsMessage::Trade(_) => interest.contains(MessageInterest::TRADE),
             WsMessage::Order(_) => interest.contains(MessageInterest::ORDER),
         }
+    }
+
+    #[test]
+    fn encode_decode_order_book_level() {
+        let level = OrderBookLevel {
+            price: Decimal!(0.5),
+            size: Decimal!(100),
+        };
+
+        let encoded = encode_to_vec(&level, config::standard()).unwrap();
+        let (decoded, _): (OrderBookLevel, _) =
+            decode_from_slice(&encoded, config::standard()).unwrap();
+
+        assert_eq!(level.price, decoded.price);
+        assert_eq!(level.size, decoded.size);
+    }
+
+    #[test]
+    fn encode_decode_book_update() {
+        let update = BookUpdate {
+            asset_id: U256::from_str(
+                "106585164761922456203746651621390029417453862034640469075081961934906147433548",
+            )
+            .unwrap(),
+            market: B256::from_str(
+                "0x0000000000000000000000000000000000000000000000000000000000000001",
+            )
+            .unwrap(),
+            timestamp: 1234567890,
+            bids: vec![OrderBookLevel {
+                price: Decimal!(0.5),
+                size: Decimal!(100),
+            }],
+            asks: vec![OrderBookLevel {
+                price: Decimal!(0.51),
+                size: Decimal!(50),
+            }],
+            hash: None,
+        };
+
+        let encoded = encode_to_vec(&update, config::standard()).unwrap();
+        let (decoded, _): (BookUpdate, _) =
+            decode_from_slice(&encoded, config::standard()).unwrap();
+
+        assert_eq!(update.asset_id, decoded.asset_id);
+        assert_eq!(update.market, decoded.market);
+        assert_eq!(update.timestamp, decoded.timestamp);
+        assert_eq!(update.bids, decoded.bids);
+        assert_eq!(update.asks, decoded.asks);
+        assert_eq!(update.hash, decoded.hash);
     }
 
     #[test]
