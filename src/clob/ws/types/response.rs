@@ -1,5 +1,5 @@
 use bon::Builder;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::{DefaultOnNull, DisplayFromStr, NoneAsEmptyString, serde_as};
 #[cfg(feature = "tracing")]
@@ -70,7 +70,7 @@ impl WsMessage {
 /// state of the orderbook with bids and asks arrays.
 #[non_exhaustive]
 #[serde_as]
-#[derive(Debug, Clone, Deserialize, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Builder)]
 pub struct BookUpdate {
     /// Asset/token identifier
     pub asset_id: U256,
@@ -135,7 +135,7 @@ impl<C> Decode<C> for BookUpdate {
 
 /// Individual price level in an orderbook.
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Builder)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
 pub struct OrderBookLevel {
     /// Price at this level
     pub price: Decimal,
