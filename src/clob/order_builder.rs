@@ -240,7 +240,7 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
 
         let salt = self
             .salt
-            .unwrap_or_else(|| (to_ieee_754_int((self.salt_generator)())));
+            .unwrap_or_else(|| to_ieee_754_int((self.salt_generator)()));
 
         let maker_amount = to_u256(maker_amount)?;
         let taker_amount = to_u256(taker_amount)?;
