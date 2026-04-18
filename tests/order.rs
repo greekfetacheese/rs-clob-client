@@ -79,8 +79,6 @@ mod lifecycle {
             .build()
             .await?;
 
-        assert_eq!(signable_order.order.nonce, U256::from(1));
-        assert_eq!(signable_order_2.order.nonce, U256::ZERO);
         assert_ne!(signable_order, signable_order_2);
 
         Ok(())
@@ -250,7 +248,6 @@ mod lifecycle {
             signable_order.order.signatureType,
             SignatureType::Proxy as u8
         );
-        assert_eq!(signable_order.order.nonce, U256::from(1));
         assert_eq!(signable_order.order.side, Side::Buy as u8);
         assert_ne!(signable_order.order.maker, signable_order.order.signer);
 
@@ -272,7 +269,6 @@ mod lifecycle {
             signable_order.order.signatureType,
             SignatureType::Proxy as u8
         );
-        assert_eq!(signable_order.order.nonce, U256::from(2));
         assert_eq!(signable_order.order.side, Side::Sell as u8);
         assert_ne!(signable_order.order.maker, signable_order.order.signer);
 
@@ -323,7 +319,6 @@ mod lifecycle {
             signable_order.order.signatureType,
             SignatureType::Proxy as u8
         );
-        assert_eq!(signable_order.order.nonce, U256::from(1));
         assert_eq!(signable_order.order.side, Side::Buy as u8);
         assert_ne!(signable_order.order.maker, signable_order.order.signer);
 
@@ -348,7 +343,6 @@ mod lifecycle {
         // Funder and signature type propagate from setting on the auth builder
         assert_eq!(signable_order.order.maker, signer.address());
         assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
-        assert_eq!(signable_order.order.nonce, U256::from(2));
         assert_eq!(signable_order.order.side, Side::Sell as u8);
         assert_eq!(signable_order.order.maker, signable_order.order.signer);
 
@@ -715,7 +709,7 @@ mod limit {
         let err = client
             .limit_order()
             .token_id(token_1())
-            .price(Decimal!(-0.5))
+            .price(-Decimal!(0.5))
             .size(Decimal!(21.04))
             .side(Side::Buy)
             .nonce(123)
@@ -731,7 +725,7 @@ mod limit {
             .limit_order()
             .token_id(token_1())
             .price(Decimal!(0.5))
-            .size(Decimal!(-21.04))
+            .size(-Decimal!(21.04))
             .side(Side::Buy)
             .nonce(123)
             .expiration(DateTime::<Utc>::from_str("1970-01-01T13:53:20Z").unwrap())
@@ -778,13 +772,9 @@ mod limit {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(10_520_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(21_040_000));
-            assert_eq!(signable_order.order.expiration, U256::from(50000));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Buy as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -821,13 +811,9 @@ mod limit {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(11_782_400));
             assert_eq!(signable_order.order.takerAmount, U256::from(21_040_000));
-            assert_eq!(signable_order.order.expiration, U256::from(50000));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Buy as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -864,13 +850,9 @@ mod limit {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(1_178_240));
             assert_eq!(signable_order.order.takerAmount, U256::from(21_040_000));
-            assert_eq!(signable_order.order.expiration, U256::from(50000));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Buy as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -907,13 +889,9 @@ mod limit {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(117_824));
             assert_eq!(signable_order.order.takerAmount, U256::from(21_040_000));
-            assert_eq!(signable_order.order.expiration, U256::from(50000));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Buy as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -1052,13 +1030,9 @@ mod limit {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(21_040_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(10_520_000));
-            assert_eq!(signable_order.order.expiration, U256::from(50000));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Sell as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -1095,13 +1069,9 @@ mod limit {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(21_040_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(11_782_400));
-            assert_eq!(signable_order.order.expiration, U256::from(50000));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Sell as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -1138,13 +1108,9 @@ mod limit {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(21_040_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(1_178_240));
-            assert_eq!(signable_order.order.expiration, U256::from(50000));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Sell as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -1181,13 +1147,9 @@ mod limit {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(21_040_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(117_824));
-            assert_eq!(signable_order.order.expiration, U256::from(50000));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Sell as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -1336,13 +1298,9 @@ mod limit {
             .await?;
 
         assert_eq!(signable_order.order.maker, client.address());
-        assert_eq!(signable_order.order.taker, Address::ZERO);
         assert_eq!(signable_order.order.tokenId, token_1());
         assert_eq!(signable_order.order.makerAmount, U256::from(51_200_000));
         assert_eq!(signable_order.order.takerAmount, U256::from(100_000_000));
-        assert_eq!(signable_order.order.expiration, U256::ZERO);
-        assert_eq!(signable_order.order.nonce, U256::ZERO);
-        assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
         assert_eq!(signable_order.order.side, Side::Buy as u8);
         assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -1356,13 +1314,9 @@ mod limit {
             .await?;
 
         assert_eq!(signable_order.order.maker, client.address());
-        assert_eq!(signable_order.order.taker, Address::ZERO);
         assert_eq!(signable_order.order.tokenId, token_2());
         assert_eq!(signable_order.order.makerAmount, U256::from(9_999_600));
         assert_eq!(signable_order.order.takerAmount, U256::from(12_820_000));
-        assert_eq!(signable_order.order.expiration, U256::ZERO);
-        assert_eq!(signable_order.order.nonce, U256::ZERO);
-        assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
         assert_eq!(signable_order.order.side, Side::Buy as u8);
         assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -1547,7 +1501,6 @@ mod market {
 
                 assert_eq!(signable_order.order.maker, client.address());
                 assert_eq!(signable_order.order.signer, client.address());
-                assert_eq!(signable_order.order.taker, Address::ZERO);
                 assert_eq!(
                     signable_order.order.tokenId,
                     U256::from_str(
@@ -1556,9 +1509,6 @@ mod market {
                 );
                 assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000)); // 100 USDC
                 assert_eq!(signable_order.order.takerAmount, U256::from(200_000_000)); // 200 `token_1()` tokens
-                assert_eq!(signable_order.order.expiration, U256::ZERO);
-                assert_eq!(signable_order.order.nonce, U256::ZERO);
-                assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
                 assert_eq!(signable_order.order.side, Side::Buy as u8);
                 assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -1773,7 +1723,6 @@ mod market {
 
                 assert_eq!(signable_order.order.maker, client.address());
                 assert_eq!(signable_order.order.signer, client.address());
-                assert_eq!(signable_order.order.taker, Address::ZERO);
                 assert_eq!(
                     signable_order.order.tokenId,
                     U256::from_str(
@@ -1782,9 +1731,6 @@ mod market {
                 );
                 assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000)); // 100 USDC
                 assert_eq!(signable_order.order.takerAmount, U256::from(200_000_000)); // 200 `token_1()` tokens
-                assert_eq!(signable_order.order.expiration, U256::ZERO);
-                assert_eq!(signable_order.order.nonce, U256::ZERO);
-                assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
                 assert_eq!(signable_order.order.side, Side::Buy as u8);
                 assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -2012,13 +1958,9 @@ mod market {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(200_000_000));
-            assert_eq!(signable_order.order.expiration, U256::from(0));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Buy as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -2066,13 +2008,9 @@ mod market {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000));
             assert_eq!(signable_order.order.takerAmount, expected_taker);
-            assert_eq!(signable_order.order.expiration, U256::from(0));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Buy as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -2120,13 +2058,9 @@ mod market {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000));
             assert_eq!(signable_order.order.takerAmount, expected_taker);
-            assert_eq!(signable_order.order.expiration, U256::from(0));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Buy as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -2171,16 +2105,12 @@ mod market {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000));
             assert_eq!(
                 signable_order.order.takerAmount,
                 U256::from(17_857_142_857_u64)
             );
-            assert_eq!(signable_order.order.expiration, U256::from(0));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Buy as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -2447,7 +2377,6 @@ mod market {
 
                 assert_eq!(signable_order.order.maker, client.address());
                 assert_eq!(signable_order.order.signer, client.address());
-                assert_eq!(signable_order.order.taker, Address::ZERO);
                 assert_eq!(
                     signable_order.order.tokenId,
                     U256::from_str(
@@ -2456,9 +2385,6 @@ mod market {
                 );
                 assert_eq!(maker_amount, U256::from(100_000_000)); // 100 `token_1()` tokens
                 assert_eq!(taker_amount, U256::from(50_000_000)); // 50 USDC
-                assert_eq!(signable_order.order.expiration, U256::ZERO);
-                assert_eq!(signable_order.order.nonce, U256::ZERO);
-                assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
                 assert_eq!(signable_order.order.side, Side::Sell as u8);
                 assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -2720,7 +2646,6 @@ mod market {
 
                 assert_eq!(signable_order.order.maker, client.address());
                 assert_eq!(signable_order.order.signer, client.address());
-                assert_eq!(signable_order.order.taker, Address::ZERO);
                 assert_eq!(
                     signable_order.order.tokenId,
                     U256::from_str(
@@ -2729,9 +2654,6 @@ mod market {
                 );
                 assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000)); // 100 USDC
                 assert_eq!(signable_order.order.takerAmount, U256::from(40_000_000)); // 40 `token_1()` tokens
-                assert_eq!(signable_order.order.expiration, U256::ZERO);
-                assert_eq!(signable_order.order.nonce, U256::ZERO);
-                assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
                 assert_eq!(signable_order.order.side, Side::Sell as u8);
                 assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -3005,13 +2927,9 @@ mod market {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(50_000_000));
-            assert_eq!(signable_order.order.expiration, U256::from(0));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Sell as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -3056,13 +2974,9 @@ mod market {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(56_000_000));
-            assert_eq!(signable_order.order.expiration, U256::from(0));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Sell as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -3107,13 +3021,9 @@ mod market {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(5_600_000));
-            assert_eq!(signable_order.order.expiration, U256::from(0));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Sell as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 
@@ -3158,13 +3068,9 @@ mod market {
 
             assert_eq!(signable_order.order.maker, client.address());
             assert_eq!(signable_order.order.signer, client.address());
-            assert_eq!(signable_order.order.taker, Address::ZERO);
             assert_eq!(signable_order.order.tokenId, token_1());
             assert_eq!(signable_order.order.makerAmount, U256::from(100_000_000));
             assert_eq!(signable_order.order.takerAmount, U256::from(560_000));
-            assert_eq!(signable_order.order.expiration, U256::from(0));
-            assert_eq!(signable_order.order.nonce, U256::from(123));
-            assert_eq!(signable_order.order.feeRateBps, U256::ZERO);
             assert_eq!(signable_order.order.side, Side::Sell as u8);
             assert_eq!(signable_order.order.signatureType, SignatureType::Eoa as u8);
 

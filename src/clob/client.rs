@@ -61,8 +61,9 @@ use crate::{
 };
 
 const ORDER_NAME: Option<Cow<'static, str>> = Some(Cow::Borrowed("Polymarket CTF Exchange"));
-const VERSION: Option<Cow<'static, str>> = Some(Cow::Borrowed("1"));
+const VERSION: Option<Cow<'static, str>> = Some(Cow::Borrowed("2"));
 
+const CLOB_V2_URL: &str = "https://clob-v2.polymarket.com";
 const TERMINAL_CURSOR: &str = "LTE="; // base64("-1")
 
 /// The type used to build a request to authenticate the inner [`Client<Unauthorized>`]. Calling
@@ -256,7 +257,7 @@ impl<S: Signer, K: Kind> AuthenticationBuilder<'_, S, K> {
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<()> {
-///     let client = Client::new("https://clob.polymarket.com", Config::default())?;
+///     let client = Client::new("https://clob-v2.polymarket.com", Config::default())?;
 ///
 ///     let ok = client.ok().await?;
 ///     println!("Ok: {ok}");
@@ -278,7 +279,7 @@ impl<S: Signer, K: Kind> AuthenticationBuilder<'_, S, K> {
 /// async fn main() -> anyhow::Result<()> {
 ///     let private_key = std::env::var(PRIVATE_KEY_VAR).expect("Need a private key");
 ///     let signer = LocalSigner::from_str(&private_key)?.with_chain_id(Some(POLYGON));
-///     let client = Client::new("https://clob.polymarket.com", Config::default())?
+///     let client = Client::new("https://clob-v2.polymarket.com", Config::default())?
 ///         .authentication_builder(&signer)
 ///         .authenticate()
 ///         .await?;
@@ -352,7 +353,7 @@ impl Drop for DroppingCancellationToken {
 
 impl Default for Client<Unauthenticated> {
     fn default() -> Self {
-        Client::new("https://clob.polymarket.com", Config::default())
+        Client::new(CLOB_V2_URL, Config::default())
             .expect("Client with default endpoint should succeed")
     }
 }
@@ -494,7 +495,7 @@ impl<S: State> Client<S> {
     /// ```no_run
     /// # use polymarket_client_sdk::clob::{Client, Config};
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = Client::new("https://clob.polymarket.com", Config::default())?;
+    /// let client = Client::new("https://clob-v2.polymarket.com", Config::default())?;
     /// println!("Host: {}", client.host());
     /// # Ok(())
     /// # }
@@ -527,7 +528,7 @@ impl<S: State> Client<S> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use polymarket_client_sdk::types::U256;
     ///
-    /// let client = Client::new("https://clob.polymarket.com", Config::default())?;
+    /// let client = Client::new("https://clob-v2.polymarket.com", Config::default())?;
     /// client.set_tick_size(U256::ZERO, TickSize::Hundredth);
     /// # Ok(())
     /// # }
@@ -548,7 +549,7 @@ impl<S: State> Client<S> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use polymarket_client_sdk::types::U256;
     ///
-    /// let client = Client::new("https://clob.polymarket.com", Config::default())?;
+    /// let client = Client::new("https://clob-v2.polymarket.com", Config::default())?;
     /// client.set_neg_risk(U256::ZERO, true);
     /// # Ok(())
     /// # }
@@ -570,7 +571,7 @@ impl<S: State> Client<S> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use polymarket_client_sdk::types::U256;
     ///
-    /// let client = Client::new("https://clob.polymarket.com", Config::default())?;
+    /// let client = Client::new("https://clob-v2.polymarket.com", Config::default())?;
     /// client.set_fee_rate_bps(U256::ZERO, 10); // 0.10% fee
     /// # Ok(())
     /// # }
@@ -888,7 +889,7 @@ impl<S: State> Client<S> {
     ///
     /// #[tokio::main]
     /// async fn main() -> anyhow::Result<()> {
-    ///     let client = Client::new("https://clob.polymarket.com", Config::default())?;
+    ///     let client = Client::new("https://clob-v2.polymarket.com", Config::default())?;
     ///
     ///     let geoblock = client.check_geoblock().await?;
     ///
@@ -1169,7 +1170,7 @@ impl Client<Unauthenticated> {
     ///
     /// # Arguments
     ///
-    /// * `host` - The CLOB API URL (e.g., <https://clob.polymarket.com>)
+    /// * `host` - The CLOB API URL (e.g., <https://clob-v2.polymarket.com>)
     /// * `config` - Client configuration options
     ///
     /// # Errors
@@ -1182,7 +1183,7 @@ impl Client<Unauthenticated> {
     /// use polymarket_client_sdk::clob::{Client, Config};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = Client::new("https://clob.polymarket.com", Config::default())?;
+    /// let client = Client::new("https://clob-v2.polymarket.com", Config::default())?;
     /// # Ok(())
     /// # }
     /// ```
@@ -1240,7 +1241,7 @@ impl Client<Unauthenticated> {
     /// use std::str::FromStr;
     ///
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = Client::new("https://clob.polymarket.com", Config::default())?;
+    /// let client = Client::new("https://clob-v2.polymarket.com", Config::default())?;
     /// let signer = LocalSigner::from_str("0x...")?;
     ///
     /// let authenticated_client = client

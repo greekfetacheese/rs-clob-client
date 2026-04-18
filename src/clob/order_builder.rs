@@ -1,10 +1,9 @@
 use std::marker::PhantomData;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use alloy::primitives::{U256, utils::parse_units};
+use alloy::primitives::{FixedBytes, U256, utils::parse_units};
 use chrono::{DateTime, Utc};
 use fixed_num::ops::RoundTo;
-use num_traits::ToPrimitive;
 use rand::RngExt;
 
 use crate::Result;
@@ -154,8 +153,6 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
             )));
         }
 
-        let fee_rate = self.client.fee_rate_bps(token_id).await?;
-
         /*
         let minimum_tick_size = self
             .client
@@ -205,9 +202,7 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
         }
         */
 
-        let nonce = self.nonce.unwrap_or(0);
         let expiration = self.expiration.unwrap_or(DateTime::<Utc>::UNIX_EPOCH);
-        let taker = self.taker.unwrap_or(Address::ZERO);
         let order_type = self.order_type.unwrap_or(OrderType::GTC);
         let post_only = Some(self.post_only.unwrap_or(false));
 
@@ -244,22 +239,23 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
 
         let maker_amount = to_u256(maker_amount)?;
         let taker_amount = to_u256(taker_amount)?;
+        let timestamp = Utc::now().timestamp_millis();
+        let timestamp = U256::from(timestamp);
+        let metadata: FixedBytes<32> = Default::default();
+        let builder: FixedBytes<32> = Default::default();
 
         let order = Order {
             salt: U256::from(salt),
             maker: self.funder.unwrap_or(self.signer),
-            taker,
             tokenId: token_id,
             makerAmount: maker_amount,
             takerAmount: taker_amount,
             side: side as u8,
-            feeRateBps: U256::from(fee_rate.base_fee),
-            nonce: U256::from(nonce),
             signer: self.signer,
-            expiration: U256::from(expiration.timestamp().to_u64().ok_or(Error::validation(
-                format!("Unable to represent expiration {expiration} as a u64"),
-            ))?),
             signatureType: self.signature_type as u8,
+            timestamp,
+            metadata,
+            builder,
         };
 
         #[cfg(feature = "tracing")]
@@ -376,9 +372,6 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
             .amount
             .ok_or_else(|| Error::validation("Unable to build Order due to missing amount"))?;
 
-        let nonce = self.nonce.unwrap_or(0);
-        let taker = self.taker.unwrap_or(Address::ZERO);
-
         let order_type = self.order_type.clone().unwrap_or(OrderType::FAK);
         let post_only = self.post_only;
         if post_only == Some(true) {
@@ -398,7 +391,6 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
             .await?
             .minimum_tick_size
             .as_decimal();
-        let fee_rate = self.client.fee_rate_bps(token_id).await?;
 
         let decimals = minimum_tick_size.min_scale();
 
@@ -461,20 +453,23 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
 
         let maker_amount = to_u256(maker_amount)?;
         let taker_amount = to_u256(taker_amount)?;
+        let timestamp = Utc::now().timestamp_millis();
+        let timestamp = U256::from(timestamp);
+        let metadata: FixedBytes<32> = Default::default();
+        let builder: FixedBytes<32> = Default::default();
 
         let order = Order {
             salt: U256::from(salt),
             maker: self.funder.unwrap_or(self.signer),
-            taker,
             tokenId: token_id,
             makerAmount: maker_amount,
             takerAmount: taker_amount,
             side: side as u8,
-            feeRateBps: U256::from(fee_rate.base_fee),
-            nonce: U256::from(nonce),
             signer: self.signer,
-            expiration: U256::ZERO,
             signatureType: self.signature_type as u8,
+            timestamp,
+            metadata,
+            builder,
         };
 
         #[cfg(feature = "tracing")]
