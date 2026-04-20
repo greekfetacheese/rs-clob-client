@@ -89,7 +89,7 @@ pub async fn create_authenticated(server: &MockServer) -> anyhow::Result<TestCli
             .json_body(TIMESTAMP.parse::<i64>().unwrap());
     });
 
-    let config = Config::builder().use_server_time(true).build();
+    let config = Config::default().use_server_time(true);
     let client = Client::new(&server.base_url(), config)?
         .authentication_builder(&signer)
         .authenticate()

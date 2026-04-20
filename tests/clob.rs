@@ -1320,7 +1320,7 @@ mod unauthenticated {
     #[tokio::test]
     async fn check_geoblock_should_succeed() -> anyhow::Result<()> {
         let server = MockServer::start();
-        let config = Config::builder().geoblock_host(server.base_url()).build();
+        let config = Config::default().geoblock_host(server.base_url());
         let client = Client::new(&server.base_url(), config)?;
 
         let mock = server.mock(|when, then| {
@@ -1351,7 +1351,7 @@ mod unauthenticated {
     #[tokio::test]
     async fn check_geoblock_blocked_should_succeed() -> anyhow::Result<()> {
         let server = MockServer::start();
-        let config = Config::builder().geoblock_host(server.base_url()).build();
+        let config = Config::default().geoblock_host(server.base_url());
         let client = Client::new(&server.base_url(), config)?;
 
         let mock = server.mock(|when, then| {
@@ -1505,7 +1505,7 @@ mod authenticated {
         });
 
         let funder = address!("0x995c9b1f779c04e65AF8ea3360F96c43b5e62316");
-        let config = Config::builder().use_server_time(true).build();
+        let config = Config::default().use_server_time(true);
         let client = Client::new(&server.base_url(), config)?
             .authentication_builder(&signer)
             .funder(funder)
@@ -2958,7 +2958,7 @@ mod builder_authenticated {
                 .json_body(TIMESTAMP.parse::<i64>().unwrap());
         });
 
-        let config = Config::builder().use_server_time(true).build();
+        let config = Config::default().use_server_time(true);
         let builder_config = BuilderConfig::remote(&server.base_url(), Some("token".to_owned()))?;
         let client = Client::new(&server.base_url(), config)?
             .authentication_builder(&signer)
@@ -3045,7 +3045,7 @@ mod builder_authenticated {
                 .json_body(TIMESTAMP.parse::<i64>().unwrap());
         });
 
-        let config = Config::builder().use_server_time(true).build();
+        let config = Config::default().use_server_time(true);
         let builder_config = BuilderConfig::remote(&server.base_url(), Some("token".to_owned()))?;
         let client = Client::new(&server.base_url(), config)?
             .authentication_builder(&signer)
@@ -3115,7 +3115,7 @@ mod builder_authenticated {
                 .json_body(TIMESTAMP.parse::<i64>().unwrap());
         });
 
-        let config = Config::builder().use_server_time(true).build();
+        let config = Config::default().use_server_time(true);
         let builder_config = BuilderConfig::remote(&server.base_url(), Some("token".to_owned()))?;
         let client = Client::new(&server.base_url(), config)?
             .authentication_builder(&signer)
