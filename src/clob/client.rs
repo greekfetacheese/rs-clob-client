@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::mem;
 use std::sync::Arc;
-use std::time::Duration;
 #[cfg(feature = "heartbeats")]
 use std::time::Duration;
 
@@ -375,19 +374,7 @@ pub struct Config {
     /// How often the [`Client`] will automatically submit heartbeats. The default is five (5) seconds.
     heartbeat_interval: Duration,
 
-    tcp_nodelay: bool,
-
-    pool_idle_timeout: Option<Duration>,
-
-    pool_max_idle_per_host: usize,
-
-    http2_adaptive_window: bool,
-
-    http2_keep_alive_interval: Option<Duration>,
-
-    http2_keep_alive_timeout: Duration,
-
-    http2_keep_alive_while_idle: bool,
+    client: Option<ReqwestClient>,
 }
 
 impl Config {
@@ -401,38 +388,8 @@ impl Config {
         self
     }
 
-    pub fn tcp_nodelay(mut self, tcp_nodelay: bool) -> Self {
-        self.tcp_nodelay = tcp_nodelay;
-        self
-    }
-
-    pub fn pool_idle_timeout(mut self, pool_idle_timeout: Duration) -> Self {
-        self.pool_idle_timeout = Some(pool_idle_timeout);
-        self
-    }
-
-    pub fn pool_max_idle_per_host(mut self, pool_max_idle_per_host: usize) -> Self {
-        self.pool_max_idle_per_host = pool_max_idle_per_host;
-        self
-    }
-
-    pub fn http2_keep_alive_interval(mut self, http2_keep_alive_interval: Duration) -> Self {
-        self.http2_keep_alive_interval = Some(http2_keep_alive_interval);
-        self
-    }
-
-    pub fn http2_keep_alive_timeout(mut self, http2_keep_alive_timeout: Duration) -> Self {
-        self.http2_keep_alive_timeout = http2_keep_alive_timeout;
-        self
-    }
-
-    pub fn http2_keep_alive_while_idle(mut self, http2_keep_alive_while_idle: bool) -> Self {
-        self.http2_keep_alive_while_idle = http2_keep_alive_while_idle;
-        self
-    }
-
-    pub fn http2_adaptive_window(mut self, http2_adaptive_window: bool) -> Self {
-        self.http2_adaptive_window = http2_adaptive_window;
+    pub fn with_client(mut self, client: ReqwestClient) -> Self {
+        self.client = Some(client);
         self
     }
 }
@@ -444,13 +401,7 @@ impl Default for Config {
             geoblock_host: None,
             #[cfg(feature = "heartbeats")]
             heartbeat_interval: Duration::from_secs(5),
-            tcp_nodelay: true,
-            pool_idle_timeout: None,
-            pool_max_idle_per_host: 0,
-            http2_keep_alive_interval: None,
-            http2_keep_alive_timeout: Duration::from_secs(5),
-            http2_keep_alive_while_idle: false,
-            http2_adaptive_window: false,
+            client: None,
         }
     }
 }
@@ -1256,7 +1207,7 @@ impl Client<Unauthenticated> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(host: &str, config: Config) -> Result<Client<Unauthenticated>> {
+    pub fn new(host: &str, mut config: Config) -> Result<Client<Unauthenticated>> {
         let mut headers = HeaderMap::new();
 
         headers.insert("User-Agent", HeaderValue::from_static("rs_clob_client"));
@@ -1264,16 +1215,11 @@ impl Client<Unauthenticated> {
         headers.insert("Connection", HeaderValue::from_static("keep-alive"));
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
-        let client = ReqwestClient::builder()
-            .default_headers(headers)
-            .tcp_nodelay(config.tcp_nodelay)
-            .pool_idle_timeout(config.pool_idle_timeout)
-            .pool_max_idle_per_host(config.pool_max_idle_per_host)
-            .http2_keep_alive_interval(config.http2_keep_alive_interval)
-            .http2_keep_alive_timeout(config.http2_keep_alive_timeout)
-            .http2_keep_alive_while_idle(config.http2_keep_alive_while_idle)
-            .http2_adaptive_window(config.http2_adaptive_window)
-            .build()?;
+        let client = if config.client.is_some() {
+            config.client.take().unwrap()
+        } else {
+            ReqwestClient::builder().default_headers(headers).build()?
+        };
 
         let geoblock_host = Url::parse(
             config

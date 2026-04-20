@@ -21,7 +21,6 @@
 
 use std::fs::File;
 use std::str::FromStr as _;
-use std::time::Duration;
 
 use alloy::signers::Signer as _;
 use alloy::signers::local::LocalSigner;
@@ -63,14 +62,7 @@ async fn main() -> anyhow::Result<()> {
     let private_key = std::env::var(PRIVATE_KEY_VAR).expect("Need POLYMARKET_PRIVATE_KEY");
     let signer = LocalSigner::from_str(&private_key)?.with_chain_id(Some(POLYGON));
 
-    let config = Config::builder()
-        .use_server_time(true)
-        .tcp_nodelay(false)
-        .pool_max_idle_per_host(0)
-        .http2_adaptive_window(false)
-        .http2_keep_alive_timeout(Duration::from_secs(5))
-        .http2_keep_alive_while_idle(false)
-        .build();
+    let config = Config::builder().use_server_time(true).build();
     let client = Client::new("https://clob.polymarket.com", config)?
         .authentication_builder(&signer)
         .authenticate()
