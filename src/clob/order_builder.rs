@@ -50,6 +50,7 @@ pub struct OrderBuilder<OrderKind, K: AuthKind> {
     pub(crate) taker: Option<Address>,
     pub(crate) order_type: Option<OrderType>,
     pub(crate) post_only: Option<bool>,
+    pub(crate) defer_exec: Option<bool>,
     pub(crate) funder: Option<Address>,
     pub(crate) _kind: PhantomData<OrderKind>,
 }
@@ -204,7 +205,8 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
 
         let expiration = self.expiration.unwrap_or(DateTime::<Utc>::UNIX_EPOCH);
         let order_type = self.order_type.unwrap_or(OrderType::GTC);
-        let post_only = Some(self.post_only.unwrap_or(false));
+        let post_only = self.post_only.unwrap_or(false);
+        let defer_exec = self.defer_exec.unwrap_or(false);
 
         if !matches!(order_type, OrderType::GTD) && expiration > DateTime::<Utc>::UNIX_EPOCH {
             return Err(Error::validation(
@@ -212,7 +214,7 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
             ));
         }
 
-        if post_only == Some(true) && !matches!(order_type, OrderType::GTC | OrderType::GTD) {
+        if post_only == true && !matches!(order_type, OrderType::GTC | OrderType::GTD) {
             return Err(Error::validation(
                 "postOnly is only supported for GTC and GTD orders",
             ));
@@ -272,6 +274,7 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
             expiration,
             order_type,
             post_only,
+            defer_exec,
         })
     }
 }
@@ -380,8 +383,9 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
             .ok_or_else(|| Error::validation("Unable to build Order due to missing amount"))?;
 
         let order_type = self.order_type.clone().unwrap_or(OrderType::FAK);
-        let post_only = self.post_only;
-        if post_only == Some(true) {
+        let post_only = self.post_only.unwrap_or(false);
+        let defer_exec = self.defer_exec.unwrap_or(false);
+        if post_only == true {
             return Err(Error::validation(
                 "postOnly is only supported for limit orders",
             ));
@@ -492,7 +496,8 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
             order,
             expiration,
             order_type,
-            post_only: None,
+            post_only,
+            defer_exec,
         })
     }
 }

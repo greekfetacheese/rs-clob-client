@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use alloy::dyn_abi::Eip712Domain;
-use alloy::primitives::U256;
+use alloy::primitives::{FixedBytes, U256};
 use alloy::signers::Signer;
 use alloy::sol_types::SolStruct as _;
 use async_stream::try_stream;
@@ -1464,8 +1464,9 @@ impl<K: Kind> Client<Authenticated<K>> {
             expiration,
             order_type,
             post_only,
+            defer_exec,
         }: SignableOrder,
-    ) -> Result<SignedOrder> {
+    ) -> Result<(SignedOrder, FixedBytes<32>)> {
         let token_id = order.tokenId;
         let neg_risk = self.neg_risk(token_id).await?.neg_risk;
         let chain_id = signer
@@ -1487,15 +1488,17 @@ impl<K: Kind> Client<Authenticated<K>> {
         let order_hash = &order.eip712_signing_hash(&domain);
         let signature = signer.sign_hash(order_hash).await?;
 
-        Ok(SignedOrder {
+        let signed_order = SignedOrder {
             order,
-            order_hash: *order_hash,
             expiration,
             signature,
             order_type,
             owner: self.state().credentials.key,
             post_only,
-        })
+            defer_exec,
+        };
+
+        Ok((signed_order, *order_hash))
     }
 
     /// Posts a signed order to the orderbook.
@@ -2153,6 +2156,7 @@ impl<K: Kind> Client<Authenticated<K>> {
             taker: None,
             order_type: None,
             post_only: Some(false),
+            defer_exec: Some(false),
             client: Client {
                 inner: Arc::clone(&self.inner),
                 #[cfg(feature = "heartbeats")]

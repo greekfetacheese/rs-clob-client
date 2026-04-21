@@ -1378,7 +1378,7 @@ mod authenticated {
     #[cfg(feature = "heartbeats")]
     use std::time::Duration;
 
-    use alloy::primitives::{FixedBytes, Signature};
+    use alloy::primitives::Signature;
     use alloy::signers::Signer as _;
     use alloy::signers::local::LocalSigner;
     use chrono::NaiveDate;
@@ -1533,15 +1533,15 @@ mod authenticated {
             .build()
             .await?;
 
-        let signed_order = client.sign(&signer, signable_order.clone()).await?;
+        let (signed_order, _) = client.sign(&signer, signable_order.clone()).await?;
 
         let expected = SignedOrder::builder()
             .owner(API_KEY)
-            .order_hash(FixedBytes::ZERO)
             .expiration(0)
             .order(signable_order.order)
             .order_type(OrderType::GTC)
             .post_only(false)
+            .defer_exec(false)
             .signature(Signature::new(
                 U256::from_str(
                     "67938079796141091828598175285011746318151402208362009718761031231176791189384",
@@ -1612,7 +1612,7 @@ mod authenticated {
         });
 
         let signer = LocalSigner::from_str(PRIVATE_KEY)?.with_chain_id(Some(POLYGON));
-        let signed_order = client.sign(&signer, SignableOrder::default()).await?;
+        let (signed_order, _) = client.sign(&signer, SignableOrder::default()).await?;
         let response = client.post_order(signed_order).await?;
 
         let expected = PostOrderResponse::builder()
@@ -1654,7 +1654,7 @@ mod authenticated {
         });
 
         let signer = LocalSigner::from_str(PRIVATE_KEY)?.with_chain_id(Some(POLYGON));
-        let signed_order = client.sign(&signer, SignableOrder::default()).await?;
+        let (signed_order, _) = client.sign(&signer, SignableOrder::default()).await?;
         let response = client.post_order(signed_order).await?;
 
         let expected = PostOrderResponse::builder()

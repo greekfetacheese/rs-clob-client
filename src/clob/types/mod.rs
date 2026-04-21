@@ -1,7 +1,7 @@
 use std::fmt;
 
 use alloy::core::sol;
-use alloy::primitives::{Bytes, FixedBytes, Signature, U256};
+use alloy::primitives::{Bytes, Signature, U256};
 use bon::Builder;
 use serde::ser::{Error as _, SerializeStruct as _};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
@@ -469,8 +469,10 @@ pub struct SignableOrder {
     pub order: Order,
     pub expiration: u64,
     pub order_type: OrderType,
-    #[serde(rename = "postOnly", skip_serializing_if = "Option::is_none")]
-    pub post_only: Option<bool>,
+    #[serde(rename = "postOnly")]
+    pub post_only: bool,
+    #[serde(rename = "deferExec")]
+    pub defer_exec: bool,
 }
 
 #[non_exhaustive]
@@ -478,11 +480,11 @@ pub struct SignableOrder {
 pub struct SignedOrder {
     pub order: Order,
     pub expiration: u64,
-    pub order_hash: FixedBytes<32>,
     pub signature: Signature,
     pub order_type: OrderType,
     pub owner: ApiKey,
-    pub post_only: Option<bool>,
+    pub post_only: bool,
+    pub defer_exec: bool,
 }
 
 /// Helper struct for serializing Order with signature injected.
@@ -520,8 +522,7 @@ struct OrderWithSignature<'order> {
 // CLOB expects a struct that has the `signature` "folded" into the `order` key
 impl Serialize for SignedOrder {
     fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
-        let len = if self.post_only.is_some() { 4 } else { 3 };
-        let mut st = serializer.serialize_struct("SignedOrder", len)?;
+        let mut st = serializer.serialize_struct("SignedOrder", 5)?;
 
         // Convert numeric side to Side enum for string serialization
         let side = Side::try_from(self.order.side).map_err(S::Error::custom)?;
@@ -546,9 +547,8 @@ impl Serialize for SignedOrder {
         st.serialize_field("order", &order_with_sig)?;
         st.serialize_field("orderType", &self.order_type)?;
         st.serialize_field("owner", &self.owner)?;
-        if let Some(post_only) = self.post_only {
-            st.serialize_field("postOnly", &post_only)?;
-        }
+        st.serialize_field("postOnly", &self.post_only)?;
+        st.serialize_field("deferExec", &self.defer_exec)?;
 
         st.end()
     }
@@ -715,12 +715,12 @@ mod tests {
     fn signed_order_serialization_omits_post_only_when_none() {
         let signed_order = SignedOrder {
             order: Order::default(),
-            order_hash: FixedBytes::ZERO,
             expiration: 0,
             signature: Signature::new(U256::ZERO, U256::ZERO, false),
             order_type: OrderType::GTC,
             owner: ApiKey::nil(),
-            post_only: None,
+            post_only: false,
+            defer_exec: false,
         };
 
         let value = to_value(&signed_order).expect("serialize SignedOrder");
