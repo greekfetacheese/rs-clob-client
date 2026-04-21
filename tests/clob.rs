@@ -1538,6 +1538,7 @@ mod authenticated {
         let expected = SignedOrder::builder()
             .owner(API_KEY)
             .order_hash(FixedBytes::ZERO)
+            .expiration(0)
             .order(signable_order.order)
             .order_type(OrderType::GTC)
             .post_only(false)

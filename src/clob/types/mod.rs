@@ -467,6 +467,7 @@ fn ser_salt<S: Serializer>(value: &U256, serializer: S) -> std::result::Result<S
 #[derive(Clone, Debug, Default, Serialize, Builder, PartialEq)]
 pub struct SignableOrder {
     pub order: Order,
+    pub expiration: u64,
     pub order_type: OrderType,
     #[serde(rename = "postOnly", skip_serializing_if = "Option::is_none")]
     pub post_only: Option<bool>,
@@ -476,6 +477,7 @@ pub struct SignableOrder {
 #[derive(Debug, Builder, PartialEq)]
 pub struct SignedOrder {
     pub order: Order,
+    pub expiration: u64,
     pub order_hash: FixedBytes<32>,
     pub signature: Signature,
     pub order_type: OrderType,
@@ -714,6 +716,7 @@ mod tests {
         let signed_order = SignedOrder {
             order: Order::default(),
             order_hash: FixedBytes::ZERO,
+            expiration: 0,
             signature: Signature::new(U256::ZERO, U256::ZERO, false),
             order_type: OrderType::GTC,
             owner: ApiKey::nil(),

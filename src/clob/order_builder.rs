@@ -258,11 +258,18 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
             builder,
         };
 
+        let expiration = if self.expiration.is_some() {
+            self.expiration.unwrap().timestamp_millis() as u64
+        } else {
+            0
+        };
+
         #[cfg(feature = "tracing")]
         tracing::debug!(token_id = %token_id, side = ?side, price = %price, size = %size, "limit order built");
 
         Ok(SignableOrder {
             order,
+            expiration,
             order_type,
             post_only,
         })
@@ -472,11 +479,18 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
             builder,
         };
 
+        let expiration = if self.expiration.is_some() {
+            self.expiration.unwrap().timestamp_millis() as u64
+        } else {
+            0
+        };
+
         #[cfg(feature = "tracing")]
         tracing::debug!(token_id = %token_id, side = ?side, price = %price, amount = %amount.as_inner(), "market order built");
 
         Ok(SignableOrder {
             order,
+            expiration,
             order_type,
             post_only: None,
         })

@@ -1461,6 +1461,7 @@ impl<K: Kind> Client<Authenticated<K>> {
         signer: &S,
         SignableOrder {
             order,
+            expiration,
             order_type,
             post_only,
         }: SignableOrder,
@@ -1489,6 +1490,7 @@ impl<K: Kind> Client<Authenticated<K>> {
         Ok(SignedOrder {
             order,
             order_hash: *order_hash,
+            expiration,
             signature,
             order_type,
             owner: self.state().credentials.key,
