@@ -498,7 +498,7 @@ struct OrderWithSignature<'order> {
     maker: &'order Address,
     signer: &'order Address,
 
-    // LEGACY FIELDS REQUIRED BY V2 PAYLOAD
+    // LEGACY FIELDS
     taker: Address,
     #[serde_as(as = "DisplayFromStr")]
     expiration: u64,
@@ -527,14 +527,14 @@ struct OrderWithSignature<'order> {
     #[serde_as(as = "DisplayFromStr")]
     timestamp: u64,
 
-    metadata: Bytes, // or whatever you use for bytes32 → "0x..."
+    metadata: Bytes,
     builder: Bytes,
 }
 
 // CLOB expects a struct that has the `signature` "folded" into the `order` key
 impl Serialize for SignedOrder {
     fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
-let mut st = serializer.serialize_struct("SignedOrder", 5)?;
+        let mut st = serializer.serialize_struct("SignedOrder", 5)?;
 
         let side = Side::try_from(self.order.side).map_err(S::Error::custom)?;
         let timestamp: u64 = self.order.timestamp.try_into().map_err(S::Error::custom)?;
@@ -545,7 +545,7 @@ let mut st = serializer.serialize_struct("SignedOrder", 5)?;
             signer: &self.order.signer,
 
             taker: alloy::primitives::Address::ZERO,
-            expiration: self.expiration,       
+            expiration: self.expiration,
             nonce: 0,
             fee_rate_bps: 0,
 
