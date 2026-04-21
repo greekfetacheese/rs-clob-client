@@ -1,7 +1,7 @@
 use std::fmt;
 
 use alloy::core::sol;
-use alloy::primitives::{Bytes, Signature, U256};
+use alloy::primitives::{Address, Bytes, Signature, U256};
 use bon::Builder;
 use serde::ser::{Error as _, SerializeStruct as _};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
@@ -494,45 +494,61 @@ pub struct SignedOrder {
 struct OrderWithSignature<'order> {
     #[serde(serialize_with = "ser_salt")]
     salt: &'order U256,
-    maker: &'order alloy::primitives::Address,
-    signer: &'order alloy::primitives::Address,
+
+    maker: &'order Address,
+    signer: &'order Address,
+
+    // LEGACY FIELDS REQUIRED BY V2 PAYLOAD
+    taker: Address,
+    #[serde_as(as = "DisplayFromStr")]
+    expiration: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    nonce: u64,
+    #[serde_as(as = "DisplayFromStr")]
+    fee_rate_bps: u64,
+
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "tokenId")]
     token_id: &'order U256,
+
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "makerAmount")]
     maker_amount: &'order U256,
+
     #[serde_as(as = "DisplayFromStr")]
     #[serde(rename = "takerAmount")]
     taker_amount: &'order U256,
-    /// Side serialized as "BUY"/"SELL" string (CLOB API requirement)
+
     side: Side,
     #[serde(rename = "signatureType")]
     signature_type: u8,
-    /// Signature injected into the order object
+
     signature: String,
-    /// UNIX timestamp in milliseconds
+    #[serde_as(as = "DisplayFromStr")]
     timestamp: u64,
-    /// Order metadata
-    metadata: Bytes,
-    /// Builder address
+
+    metadata: Bytes, // or whatever you use for bytes32 → "0x..."
     builder: Bytes,
 }
 
 // CLOB expects a struct that has the `signature` "folded" into the `order` key
 impl Serialize for SignedOrder {
     fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
-        let mut st = serializer.serialize_struct("SignedOrder", 5)?;
+let mut st = serializer.serialize_struct("SignedOrder", 5)?;
 
-        // Convert numeric side to Side enum for string serialization
         let side = Side::try_from(self.order.side).map_err(S::Error::custom)?;
         let timestamp: u64 = self.order.timestamp.try_into().map_err(S::Error::custom)?;
 
-        // Serialize order directly with signature injected, avoiding intermediate JSON tree
         let order_with_sig = OrderWithSignature {
             salt: &self.order.salt,
             maker: &self.order.maker,
             signer: &self.order.signer,
+
+            taker: alloy::primitives::Address::ZERO,
+            expiration: self.expiration,       
+            nonce: 0,
+            fee_rate_bps: 0,
+
             token_id: &self.order.tokenId,
             maker_amount: &self.order.makerAmount,
             taker_amount: &self.order.takerAmount,
@@ -549,7 +565,6 @@ impl Serialize for SignedOrder {
         st.serialize_field("owner", &self.owner)?;
         st.serialize_field("postOnly", &self.post_only)?;
         st.serialize_field("deferExec", &self.defer_exec)?;
-
         st.end()
     }
 }
